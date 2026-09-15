@@ -76,7 +76,10 @@ class TestImagoBudgetReportService(SavepointCase):
                 )
             ],
         }
-        return cls.env["purchase.order"].create(values)
+        order = cls.env["purchase.order"].create(values)
+        # create_date es la fecha considerada por el reporte; se fija para el test.
+        order.sudo().write({"create_date": "2026-02-15 12:00:00"})
+        return order
 
     def test_monthly_rate_and_unclassified_are_reconciled(self):
         self.env["imago.budget.exchange.rate"].create(

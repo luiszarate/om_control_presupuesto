@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="menu_imago_budget_root" name="Presupuesto Imago" sequence="45"
+              web_icon="om_control_presupuesto,static/description/icon.png"
               groups="om_control_presupuesto.group_imago_budget_user"/>
     <menuitem id="menu_imago_budget_dashboard" name="Dashboard"
               parent="menu_imago_budget_root" action="action_imago_budget_dashboard" sequence="5"/>

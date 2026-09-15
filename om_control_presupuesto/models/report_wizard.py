@@ -232,7 +232,7 @@ class ImagoBudgetReportPurchaseLine(models.TransientModel):
     currency_id = fields.Many2one(related="wizard_id.currency_id", readonly=True)
     purchase_line_id = fields.Many2one("purchase.order.line", readonly=True)
     order_id = fields.Many2one("purchase.order", string="OC", readonly=True)
-    confirmation_date = fields.Datetime(readonly=True)
+    confirmation_date = fields.Datetime(string="Fecha de creacion", readonly=True)
     month = fields.Selection(MONTH_SELECTION, readonly=True)
     partner_id = fields.Many2one("res.partner", string="Proveedor", readonly=True)
     description = fields.Text(readonly=True)

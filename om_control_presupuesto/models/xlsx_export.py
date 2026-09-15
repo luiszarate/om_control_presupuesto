@@ -188,7 +188,7 @@ def build_budget_xlsx(env, budget, report, include_subcategories=True):
     purchases.hide_gridlines(2)
     purchase_headers = [
         "OC",
-        "Fecha confirmacion UTC",
+        "Fecha creacion UTC",
         "Mes",
         "Proveedor",
         "Descripcion",
@@ -278,7 +278,7 @@ def build_budget_xlsx(env, budget, report, include_subcategories=True):
         ("Mes de corte", MONTH_NAMES[report["cutoff_month"] - 1]),
         ("Moneda", budget.currency_id.name),
         ("Politica de importe", "Total con impuestos"),
-        ("Politica de fecha", "Fecha de confirmacion"),
+        ("Politica de fecha", "Fecha de creacion"),
         ("Zona horaria", budget.timezone),
         ("Fecha de generacion UTC", fields.Datetime.to_string(fields.Datetime.now())),
         ("Reporte completo", "Si" if report["complete"] else "No"),

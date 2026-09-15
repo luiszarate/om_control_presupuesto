@@ -113,21 +113,21 @@ class ImagoBudgetReportService(models.AbstractModel):
             ("company_id", "=", budget.company_id.id),
             ("state", "in", ("purchase", "done")),
         ]
-        missing_date_domain = order_domain + [("date_approve", "=", False)]
+        missing_date_domain = order_domain + [("create_date", "=", False)]
         if integration["secihti"] == "ready":
             missing_date_domain.append(("sec_project_id", "=", False))
         missing_date_orders = self.env["purchase.order"].search(missing_date_domain)
         if missing_date_orders:
             issues.append(
-                _("%s ordenes confirmadas no tienen fecha de confirmacion.")
+                _("%s ordenes confirmadas no tienen fecha de creacion.")
                 % len(missing_date_orders)
             )
 
         line_domain = [
             ("order_id.company_id", "=", budget.company_id.id),
             ("order_id.state", "in", ("purchase", "done")),
-            ("order_id.date_approve", ">=", fields.Datetime.to_string(start_utc)),
-            ("order_id.date_approve", "<", fields.Datetime.to_string(end_utc)),
+            ("order_id.create_date", ">=", fields.Datetime.to_string(start_utc)),
+            ("order_id.create_date", "<", fields.Datetime.to_string(end_utc)),
         ]
         if "display_type" in self.env["purchase.order.line"]._fields:
             line_domain.append(("display_type", "=", False))
@@ -174,7 +174,7 @@ class ImagoBudgetReportService(models.AbstractModel):
 
         for line in purchase_lines:
             order = line.order_id
-            month = self._month_in_timezone(order.date_approve, budget.timezone)
+            month = self._month_in_timezone(order.create_date, budget.timezone)
             currency = order.currency_id
             original_amount = line.price_total
             rate = 1.0 if currency == budget.currency_id else rates.get((currency.id, month))
@@ -198,7 +198,7 @@ class ImagoBudgetReportService(models.AbstractModel):
                 "purchase_line_id": line.id,
                 "order_id": order.id,
                 "order_name": order.name,
-                "confirmation_date": fields.Datetime.to_string(order.date_approve),
+                "confirmation_date": fields.Datetime.to_string(order.create_date),
                 "month": month,
                 "partner_id": order.partner_id.id,
                 "partner_name": order.partner_id.display_name,

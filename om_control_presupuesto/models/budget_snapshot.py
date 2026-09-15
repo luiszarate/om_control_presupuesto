@@ -169,7 +169,7 @@ class ImagoBudgetSnapshotPurchaseLine(models.Model):
     purchase_line_id = fields.Many2one("purchase.order.line", ondelete="set null", readonly=True)
     order_id = fields.Many2one("purchase.order", ondelete="set null", readonly=True)
     order_name = fields.Char(readonly=True)
-    confirmation_date = fields.Datetime(readonly=True)
+    confirmation_date = fields.Datetime(string="Fecha de creacion", readonly=True)
     month = fields.Integer(readonly=True)
     partner_name = fields.Char(readonly=True)
     description = fields.Text(readonly=True)

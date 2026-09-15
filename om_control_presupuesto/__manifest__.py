@@ -1,7 +1,7 @@
 {
     "name": "Presupuesto Imago",
     "summary": "Control anual de presupuesto contra ordenes de compra",
-    "version": "14.0.1.0.1",
+    "version": "14.0.1.0.2",
     "category": "Purchases",
     "author": "Imago Aerospace",
     "license": "LGPL-3",
