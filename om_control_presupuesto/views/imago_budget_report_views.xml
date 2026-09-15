@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_imago_budget_report_form" model="ir.ui.view">
+        <field name="name">imago.budget.report.wizard.form</field>
+        <field name="model">imago.budget.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resumen mensual">
+                <header>
+                    <button name="action_calculate" type="object" string="Actualizar" class="oe_highlight"/>
+                    <button name="action_view_purchase_lines" type="object" string="Detalle de compras"
+                            attrs="{'invisible': [('calculated_at', '=', False)]}"/>
+                    <button name="action_export_xlsx" type="object" string="Exportar Excel" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="budget_id" options="{'no_create': True}"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="cutoff_month"/>
+                            <field name="category_id" options="{'no_create': True}"/>
+                            <field name="include_subcategories"/>
+                        </group>
+                        <group attrs="{'invisible': [('calculated_at', '=', False)]}">
+                            <field name="calculated_at"/>
+                            <field name="complete"/>
+                            <field name="has_total_budget" invisible="1"/>
+                            <field name="has_total_projection" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-warning" role="alert"
+                         attrs="{'invisible': [('warning_text', '=', False)]}">
+                        <field name="warning_text" nolabel="1"/>
+                    </div>
+                    <div class="alert alert-danger" role="alert"
+                         attrs="{'invisible': [('issue_text', '=', False)]}">
+                        <strong>Reporte incompleto</strong>
+                        <field name="issue_text" nolabel="1"/>
+                    </div>
+                    <group string="Totales" attrs="{'invisible': [('calculated_at', '=', False)]}" col="6">
+                        <field name="authorized_amount"/>
+                        <field name="spent_amount"/>
+                        <field name="available_amount" attrs="{'invisible': [('complete', '=', False)]}"/>
+                        <field name="remaining_pct" widget="percentage"
+                               attrs="{'invisible': ['|', ('complete', '=', False), ('has_total_budget', '=', False)]}"/>
+                        <field name="projection_amount"
+                               attrs="{'invisible': ['|', ('complete', '=', False), ('has_total_projection', '=', False)]}"/>
+                        <field name="projection_pct" widget="percentage"
+                               attrs="{'invisible': ['|', '|', ('complete', '=', False), ('has_total_projection', '=', False), ('has_total_budget', '=', False)]}"/>
+                    </group>
+                    <field name="purchase_line_ids" invisible="1"/>
+                    <field name="detail_line_ids" invisible="1"/>
+                    <field name="export_file" filename="export_filename" invisible="1"/>
+                    <field name="export_filename" invisible="1"/>
+                    <field name="line_ids" nolabel="1" attrs="{'invisible': [('calculated_at', '=', False)]}">
+                        <tree create="0" delete="0"
+                              decoration-danger="status == 'over'"
+                              decoration-warning="status in ('risk', 'unbudgeted', 'incomplete')"
+                              decoration-success="status == 'within'">
+                            <field name="name"/>
+                            <field name="authorized_amount" sum="Total"/>
+                            <field name="spent_amount" sum="Total"/>
+                            <field name="available_amount" sum="Total"
+                                   attrs="{'invisible': [('complete', '=', False)]}"/>
+                            <field name="remaining_pct" widget="percentage"
+                                   attrs="{'invisible': ['|', ('complete', '=', False), ('has_budget', '=', False)]}"/>
+                            <field name="projection_amount" sum="Total"
+                                   attrs="{'invisible': [('has_projection', '=', False)]}"/>
+                            <field name="projection_pct" widget="percentage"
+                                   attrs="{'invisible': ['|', ('has_projection', '=', False), ('has_budget', '=', False)]}"/>
+                            <field name="status"/>
+                            <field name="complete" invisible="1"/>
+                            <field name="has_budget" invisible="1"/>
+                            <field name="has_projection" invisible="1"/>
+                            <field name="month_01" sum="Ene"/>
+                            <field name="month_02" sum="Feb"/>
+                            <field name="month_03" sum="Mar"/>
+                            <field name="month_04" sum="Abr"/>
+                            <field name="month_05" sum="May"/>
+                            <field name="month_06" sum="Jun"/>
+                            <field name="month_07" sum="Jul"/>
+                            <field name="month_08" sum="Ago"/>
+                            <field name="month_09" sum="Sep"/>
+                            <field name="month_10" sum="Oct"/>
+                            <field name="month_11" sum="Nov"/>
+                            <field name="month_12" sum="Dic"/>
+                            <field name="currency_id" invisible="1"/>
+                        </tree>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_imago_budget_report_purchase_line_tree" model="ir.ui.view">
+        <field name="name">imago.budget.report.purchase.line.tree</field>
+        <field name="model">imago.budget.report.purchase.line</field>
+        <field name="arch" type="xml">
+            <tree create="0" edit="0" delete="0"
+                  decoration-warning="inclusion_status in ('unclassified', 'missing_rate')"
+                  decoration-muted="inclusion_status == 'excluded_secihti'">
+                <button name="action_open_purchase_order" type="object" icon="fa-external-link" string="Abrir OC"/>
+                <field name="order_id"/>
+                <field name="confirmation_date"/>
+                <field name="month"/>
+                <field name="partner_id"/>
+                <field name="description"/>
+                <field name="project_id"/>
+                <field name="category_id"/>
+                <field name="subcategory_id"/>
+                <field name="original_currency_id"/>
+                <field name="subtotal_amount" sum="Subtotal"/>
+                <field name="tax_amount" sum="Impuestos"/>
+                <field name="original_amount" sum="Total original"/>
+                <field name="rate" attrs="{'invisible': [('has_conversion', '=', False)]}"/>
+                <field name="converted_amount" sum="Total MXN"
+                       attrs="{'invisible': [('has_conversion', '=', False)]}"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="has_conversion" invisible="1"/>
+                <field name="inclusion_status"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_imago_budget_report_purchase_line_search" model="ir.ui.view">
+        <field name="name">imago.budget.report.purchase.line.search</field>
+        <field name="model">imago.budget.report.purchase.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="order_id"/>
+                <field name="partner_id"/>
+                <field name="project_id"/>
+                <field name="category_id"/>
+                <field name="original_currency_id"/>
+                <filter name="included" string="Incluidas" domain="[('inclusion_status', '=', 'included')]"/>
+                <filter name="unclassified" string="Sin clasificar" domain="[('inclusion_status', '=', 'unclassified')]"/>
+                <filter name="missing_rate" string="Pendientes de conversion" domain="[('inclusion_status', '=', 'missing_rate')]"/>
+                <filter name="excluded" string="Excluidas SECIHTI" domain="[('inclusion_status', '=', 'excluded_secihti')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Categoria" context="{'group_by': 'category_id'}"/>
+                    <filter string="Proyecto" context="{'group_by': 'project_id'}"/>
+                    <filter string="Mes" context="{'group_by': 'month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_imago_budget_report_purchase_line_form" model="ir.ui.view">
+        <field name="name">imago.budget.report.purchase.line.form</field>
+        <field name="model">imago.budget.report.purchase.line</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_open_purchase_order" type="object" string="Abrir orden de compra" class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="order_id"/>
+                            <field name="confirmation_date"/>
+                            <field name="partner_id"/>
+                            <field name="description"/>
+                        </group>
+                        <group>
+                            <field name="project_id"/>
+                            <field name="category_id"/>
+                            <field name="subcategory_id"/>
+                            <field name="inclusion_status"/>
+                        </group>
+                    </group>
+                    <group string="Importes">
+                        <field name="original_currency_id"/>
+                        <field name="subtotal_amount"/>
+                        <field name="tax_amount"/>
+                        <field name="original_amount"/>
+                        <field name="rate" attrs="{'invisible': [('has_conversion', '=', False)]}"/>
+                        <field name="converted_amount" attrs="{'invisible': [('has_conversion', '=', False)]}"/>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="has_conversion" invisible="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_imago_budget_report" model="ir.actions.act_window">
+        <field name="name">Resumen mensual</field>
+        <field name="res_model">imago.budget.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

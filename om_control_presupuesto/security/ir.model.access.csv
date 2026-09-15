@@ -1,0 +1,22 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_imago_budget_user,imago.budget user,model_imago_budget,group_imago_budget_user,1,0,0,0
+access_imago_budget_manager,imago.budget manager,model_imago_budget,group_imago_budget_manager,1,1,1,0
+access_imago_budget_admin,imago.budget admin,model_imago_budget,group_imago_budget_admin,1,1,1,1
+access_imago_budget_category_user,imago.budget.category user,model_imago_budget_category,group_imago_budget_user,1,0,0,0
+access_imago_budget_category_manager,imago.budget.category manager,model_imago_budget_category,group_imago_budget_manager,1,1,1,0
+access_imago_budget_category_admin,imago.budget.category admin,model_imago_budget_category,group_imago_budget_admin,1,1,1,1
+access_imago_budget_line_user,imago.budget.line user,model_imago_budget_line,group_imago_budget_user,1,0,0,0
+access_imago_budget_line_manager,imago.budget.line manager,model_imago_budget_line,group_imago_budget_manager,1,1,1,1
+access_imago_budget_project_rule_user,imago.budget.project.rule user,model_imago_budget_project_rule,group_imago_budget_user,1,0,0,0
+access_imago_budget_project_rule_manager,imago.budget.project.rule manager,model_imago_budget_project_rule,group_imago_budget_manager,1,1,1,1
+access_imago_budget_exchange_rate_user,imago.budget.exchange.rate user,model_imago_budget_exchange_rate,group_imago_budget_user,1,0,0,0
+access_imago_budget_exchange_rate_manager,imago.budget.exchange.rate manager,model_imago_budget_exchange_rate,group_imago_budget_manager,1,1,1,1
+access_imago_budget_snapshot_user,imago.budget.snapshot user,model_imago_budget_snapshot,group_imago_budget_user,1,0,0,0
+access_imago_budget_snapshot_manager,imago.budget.snapshot manager,model_imago_budget_snapshot,group_imago_budget_manager,1,0,1,0
+access_imago_budget_snapshot_line_user,imago.budget.snapshot.line user,model_imago_budget_snapshot_line,group_imago_budget_user,1,0,0,0
+access_imago_budget_snapshot_line_manager,imago.budget.snapshot.line manager,model_imago_budget_snapshot_line,group_imago_budget_manager,1,0,1,0
+access_imago_budget_snapshot_purchase_line_user,imago.budget.snapshot.purchase.line user,model_imago_budget_snapshot_purchase_line,group_imago_budget_user,1,0,0,0
+access_imago_budget_snapshot_purchase_line_manager,imago.budget.snapshot.purchase.line manager,model_imago_budget_snapshot_purchase_line,group_imago_budget_manager,1,0,1,0
+access_imago_budget_report_wizard,imago.budget.report.wizard,model_imago_budget_report_wizard,group_imago_budget_user,1,1,1,1
+access_imago_budget_report_line,imago.budget.report.line,model_imago_budget_report_line,group_imago_budget_user,1,1,1,1
+access_imago_budget_report_purchase_line,imago.budget.report.purchase.line,model_imago_budget_report_purchase_line,group_imago_budget_user,1,1,1,1

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_imago_budget_root" name="Presupuesto Imago" sequence="45"
+              groups="om_control_presupuesto.group_imago_budget_user"/>
+    <menuitem id="menu_imago_budget_dashboard" name="Dashboard"
+              parent="menu_imago_budget_root" action="action_imago_budget_dashboard" sequence="5"/>
+    <menuitem id="menu_imago_budget_report" name="Resumen mensual"
+              parent="menu_imago_budget_root" action="action_imago_budget_report" sequence="10"/>
+    <menuitem id="menu_imago_budget_annual" name="Presupuestos anuales"
+              parent="menu_imago_budget_root" action="action_imago_budget" sequence="20"/>
+    <menuitem id="menu_imago_budget_configuration" name="Configuracion"
+              parent="menu_imago_budget_root" sequence="90"
+              groups="om_control_presupuesto.group_imago_budget_manager"/>
+    <menuitem id="menu_imago_budget_categories" name="Categorias"
+              parent="menu_imago_budget_configuration" action="action_imago_budget_category" sequence="10"/>
+</odoo>

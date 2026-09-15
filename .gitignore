@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Odoo runtime and generated files
+*.log
+*.pot
+filestore/
+sessions/
+
+# Editors and operating system
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local environments and secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Generated exports
+*.xlsx
+*.xls

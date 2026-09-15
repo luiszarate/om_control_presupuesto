@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_imago_budget_tree" model="ir.ui.view">
+        <field name="name">imago.budget.tree</field>
+        <field name="model">imago.budget</field>
+        <field name="arch" type="xml">
+            <tree decoration-muted="state == 'closed'" decoration-info="state == 'draft'">
+                <field name="year"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="authorized_amount" sum="Total autorizado"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="responsible_id"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_imago_budget_form" model="ir.ui.view">
+        <field name="name">imago.budget.form</field>
+        <field name="model">imago.budget</field>
+        <field name="arch" type="xml">
+            <form string="Presupuesto anual">
+                <header>
+                    <button name="action_activate" type="object" string="Activar" class="oe_highlight"
+                            groups="om_control_presupuesto.group_imago_budget_manager"
+                            attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                    <button name="action_close" type="object" string="Cerrar"
+                            groups="om_control_presupuesto.group_imago_budget_manager"
+                            attrs="{'invisible': [('state', '!=', 'active')]}"/>
+                    <button name="action_reopen" type="object" string="Reabrir"
+                            groups="om_control_presupuesto.group_imago_budget_manager"
+                            attrs="{'invisible': [('state', '!=', 'closed')]}"/>
+                    <button name="action_open_report" type="object" string="Ver resumen"/>
+                    <button name="action_load_reference_structure" type="object"
+                            string="Cargar estructura inicial"
+                            groups="om_control_presupuesto.group_imago_budget_manager"
+                            attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="year" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                            <field name="company_id" groups="base.group_multi_company"
+                                   attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                            <field name="responsible_id"/>
+                            <field name="authorized_amount" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="timezone" attrs="{'readonly': [('state', '=', 'closed')]}"/>
+                            <field name="amount_policy"/>
+                            <field name="date_policy"/>
+                            <field name="activation_date"/>
+                            <field name="closed_date"/>
+                            <field name="reopen_reason"
+                                   attrs="{'invisible': [('state', '!=', 'closed')]}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Partidas">
+                            <field name="line_ids" attrs="{'readonly': [('state', '=', 'closed')]}"
+                                   context="{'default_budget_id': active_id}">
+                                <tree editable="bottom">
+                                    <field name="company_id" invisible="1"/>
+                                    <field name="category_id"/>
+                                    <field name="amount_status"/>
+                                    <field name="amount" sum="Total autorizado"/>
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="note"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Proyectos">
+                            <field name="project_rule_ids" attrs="{'readonly': [('state', '=', 'closed')]}"
+                                   context="{'default_budget_id': active_id}">
+                                <tree editable="bottom">
+                                    <field name="company_id" invisible="1"/>
+                                    <field name="project_id"/>
+                                    <field name="category_id"/>
+                                    <field name="subcategory_id"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Tipos de cambio">
+                            <field name="exchange_rate_ids" attrs="{'readonly': [('state', '=', 'closed')]}"
+                                   context="{'default_budget_id': active_id}">
+                                <tree editable="bottom">
+                                    <field name="currency_id"/>
+                                    <field name="month"/>
+                                    <field name="rate"/>
+                                    <field name="reporting_currency_id" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Historial">
+                            <field name="snapshot_ids" readonly="1">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="snapshot_date"/>
+                                    <field name="user_id"/>
+                                    <field name="authorized_amount"/>
+                                    <field name="spent_amount"/>
+                                    <field name="available_amount"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_imago_budget_search" model="ir.ui.view">
+        <field name="name">imago.budget.search</field>
+        <field name="model">imago.budget</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="year"/>
+                <field name="company_id"/>
+                <field name="responsible_id"/>
+                <filter name="active" string="Vigentes" domain="[('state', '=', 'active')]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter string="Compania" context="{'group_by': 'company_id'}"/>
+                    <filter string="Estado" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_imago_budget" model="ir.actions.act_window">
+        <field name="name">Presupuestos anuales</field>
+        <field name="res_model">imago.budget</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_imago_budget_search"/>
+    </record>
+
+    <record id="view_imago_budget_snapshot_form" model="ir.ui.view">
+        <field name="name">imago.budget.snapshot.form</field>
+        <field name="model">imago.budget.snapshot</field>
+        <field name="arch" type="xml">
+            <form string="Fotografia de cierre" create="0" edit="0" delete="0">
+                <sheet>
+                    <h1><field name="name"/></h1>
+                    <group>
+                        <group>
+                            <field name="budget_id"/>
+                            <field name="version"/>
+                            <field name="snapshot_date"/>
+                            <field name="user_id"/>
+                        </group>
+                        <group>
+                            <field name="authorized_amount"/>
+                            <field name="spent_amount"/>
+                            <field name="available_amount"/>
+                            <field name="projection_amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Resumen">
+                            <field name="line_ids">
+                                <tree>
+                                    <field name="category_name"/>
+                                    <field name="authorized_amount" sum="Total"/>
+                                    <field name="spent_amount" sum="Total"/>
+                                    <field name="available_amount" sum="Total"/>
+                                    <field name="projection_amount" sum="Total"/>
+                                    <field name="status"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Compras">
+                            <field name="purchase_line_ids">
+                                <tree>
+                                    <field name="order_name"/>
+                                    <field name="confirmation_date"/>
+                                    <field name="partner_name"/>
+                                    <field name="project_id"/>
+                                    <field name="category_id"/>
+                                    <field name="original_currency_name"/>
+                                    <field name="subtotal_amount"/>
+                                    <field name="tax_amount"/>
+                                    <field name="original_amount"/>
+                                    <field name="rate"/>
+                                    <field name="converted_amount"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Parametros">
+                            <field name="payload" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

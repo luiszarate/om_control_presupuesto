@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_imago_budget" model="ir.module.category">
+        <field name="name">Presupuesto Imago</field>
+        <field name="sequence">35</field>
+    </record>
+
+    <record id="group_imago_budget_user" model="res.groups">
+        <field name="name">Consulta de presupuesto</field>
+        <field name="category_id" ref="module_category_imago_budget"/>
+        <field name="implied_ids" eval="[(4, ref('purchase.group_purchase_user'))]"/>
+    </record>
+
+    <record id="group_imago_budget_manager" model="res.groups">
+        <field name="name">Responsable de presupuesto</field>
+        <field name="category_id" ref="module_category_imago_budget"/>
+        <field name="implied_ids" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+
+    <record id="group_imago_budget_admin" model="res.groups">
+        <field name="name">Administrador de presupuesto</field>
+        <field name="category_id" ref="module_category_imago_budget"/>
+        <field name="implied_ids" eval="[(4, ref('group_imago_budget_manager'))]"/>
+        <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+
+    <record id="rule_imago_budget_company" model="ir.rule">
+        <field name="name">Presupuestos de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+    <record id="rule_imago_budget_category_company" model="ir.rule">
+        <field name="name">Categorias de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget_category"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+    <record id="rule_imago_budget_line_company" model="ir.rule">
+        <field name="name">Partidas de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+    <record id="rule_imago_budget_project_rule_company" model="ir.rule">
+        <field name="name">Reglas de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget_project_rule"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+    <record id="rule_imago_budget_exchange_rate_company" model="ir.rule">
+        <field name="name">Tipos de cambio de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget_exchange_rate"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+    <record id="rule_imago_budget_snapshot_company" model="ir.rule">
+        <field name="name">Fotografias de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget_snapshot"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+    <record id="rule_imago_budget_snapshot_line_company" model="ir.rule">
+        <field name="name">Resumenes congelados de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget_snapshot_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+    <record id="rule_imago_budget_snapshot_purchase_line_company" model="ir.rule">
+        <field name="name">Compras congeladas de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget_snapshot_purchase_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
+</odoo>

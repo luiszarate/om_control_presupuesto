@@ -1,0 +1,22 @@
+{
+    "name": "Presupuesto Imago",
+    "summary": "Control anual de presupuesto contra ordenes de compra",
+    "version": "14.0.1.0.0",
+    "category": "Purchases",
+    "author": "Imago Aerospace",
+    "license": "LGPL-3",
+    "external_dependencies": {"python": ["xlsxwriter"]},
+    "depends": ["purchase", "project", "mail", "abs_project_po"],
+    "data": [
+        "security/imago_budget_security.xml",
+        "security/ir.model.access.csv",
+        "views/imago_budget_category_views.xml",
+        "views/imago_budget_views.xml",
+        "views/imago_budget_report_views.xml",
+        "views/imago_budget_dashboard_views.xml",
+        "views/imago_budget_menus.xml",
+    ],
+    "qweb": ["static/src/xml/imago_budget_dashboard.xml"],
+    "application": True,
+    "installable": True,
+}

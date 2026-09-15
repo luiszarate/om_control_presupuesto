@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="assets_backend" inherit_id="web.assets_backend" name="Presupuesto Imago backend assets">
+        <xpath expr="." position="inside">
+            <script type="text/javascript" src="/om_control_presupuesto/static/src/js/imago_budget_dashboard.js"/>
+            <link rel="stylesheet" type="text/scss" href="/om_control_presupuesto/static/src/scss/imago_budget_dashboard.scss"/>
+        </xpath>
+    </template>
+
+    <record id="action_imago_budget_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard de presupuesto</field>
+        <field name="tag">imago_budget_dashboard</field>
+    </record>
+</odoo>
+
