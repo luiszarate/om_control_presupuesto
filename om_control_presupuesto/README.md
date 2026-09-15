@@ -10,7 +10,7 @@ Primera base funcional del control anual definido en `ESPECIFICACION_INICIAL.md`
 - Regla unica Proyecto -> Categoria / Subcategoria por ejercicio.
 - Tipos de cambio mensuales expresados como moneda de la compania por unidad.
 - Motor unico por linea de OC: estados `purchase` y `done`, `price_total`, fecha de
-  creacion de la OC y proyecto de cabecera aportado por `abs_project_po`.
+  recepcion (`date_planned`) y proyecto de cabecera aportado por `abs_project_po`.
 - Deteccion opcional de `secihti_budget` y exclusion por `sec_project_id`.
 - Resumen mensual nativo con diagnosticos de lineas sin tipo de cambio y compras
   sin clasificar.
