@@ -131,8 +131,10 @@
                 <field name="responsible_id"/>
                 <filter name="active" string="Vigentes" domain="[('state', '=', 'active')]"/>
                 <group expand="0" string="Agrupar por">
-                    <filter string="Compania" context="{'group_by': 'company_id'}"/>
-                    <filter string="Estado" context="{'group_by': 'state'}"/>
+                    <filter name="group_by_company" string="Compania"
+                            context="{'group_by': 'company_id'}"/>
+                    <filter name="group_by_state" string="Estado"
+                            context="{'group_by': 'state'}"/>
                 </group>
             </search>
         </field>

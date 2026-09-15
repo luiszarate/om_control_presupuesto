@@ -137,9 +137,12 @@
                 <filter name="missing_rate" string="Pendientes de conversion" domain="[('inclusion_status', '=', 'missing_rate')]"/>
                 <filter name="excluded" string="Excluidas SECIHTI" domain="[('inclusion_status', '=', 'excluded_secihti')]"/>
                 <group expand="0" string="Agrupar por">
-                    <filter string="Categoria" context="{'group_by': 'category_id'}"/>
-                    <filter string="Proyecto" context="{'group_by': 'project_id'}"/>
-                    <filter string="Mes" context="{'group_by': 'month'}"/>
+                    <filter name="group_by_category" string="Categoria"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter name="group_by_project" string="Proyecto"
+                            context="{'group_by': 'project_id'}"/>
+                    <filter name="group_by_month" string="Mes"
+                            context="{'group_by': 'month'}"/>
                 </group>
             </search>
         </field>
