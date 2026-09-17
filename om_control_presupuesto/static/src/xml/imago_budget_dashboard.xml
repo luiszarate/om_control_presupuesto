@@ -53,9 +53,43 @@
                 <div class="alert alert-warning" t-if="report.warnings.length">
                     <t t-foreach="report.warnings" t-as="warning"><div t-esc="warning"/></t>
                 </div>
-                <div class="alert alert-danger" t-if="report.issues.length">
+                <div class="alert alert-danger o_imago_issues" t-if="report.issue_items.length">
                     <strong>Reporte incompleto</strong>
-                    <t t-foreach="report.issues" t-as="issue"><div t-esc="issue"/></t>
+                    <p>Restante y proyeccion quedan pendientes hasta resolver o descartar estas incidencias.</p>
+                    <t t-foreach="report.issue_items" t-as="issue">
+                        <div class="o_imago_issue">
+                            <div class="o_imago_issue_head">
+                                <span t-esc="issue.title"/>
+                                <button t-if="widget.data.can_dismiss" type="button"
+                                        class="btn btn-sm btn-outline-secondary o_imago_dismiss_issue"
+                                        t-att-data-issue-index="issue_index">Descartar</button>
+                            </div>
+                            <small class="o_imago_issue_hint" t-esc="issue.hint"/>
+                            <details t-if="issue.details.length">
+                                <summary>Ver detalle (<t t-esc="issue.details.length"/>)</summary>
+                                <ul><t t-foreach="issue.details" t-as="detail"><li t-esc="detail"/></t></ul>
+                            </details>
+                        </div>
+                    </t>
+                </div>
+                <div class="alert alert-secondary o_imago_issues" t-if="report.dismissed_issue_items.length">
+                    <details>
+                        <summary>Incidencias descartadas (<t t-esc="report.dismissed_issue_items.length"/>)</summary>
+                        <t t-foreach="report.dismissed_issue_items" t-as="issue">
+                            <div class="o_imago_issue">
+                                <div class="o_imago_issue_head">
+                                    <span t-esc="issue.title"/>
+                                    <button t-if="widget.data.can_dismiss" type="button"
+                                            class="btn btn-sm btn-link o_imago_restore_issue"
+                                            t-att-data-issue-index="issue_index">Restaurar</button>
+                                </div>
+                                <details t-if="issue.details.length">
+                                    <summary>Ver detalle (<t t-esc="issue.details.length"/>)</summary>
+                                    <ul><t t-foreach="issue.details" t-as="detail"><li t-esc="detail"/></t></ul>
+                                </details>
+                            </div>
+                        </t>
+                    </details>
                 </div>
 
                 <div class="o_imago_cards">

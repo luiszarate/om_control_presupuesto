@@ -97,6 +97,20 @@
                                 </tree>
                             </field>
                         </page>
+                        <page string="Incidencias descartadas"
+                              attrs="{'invisible': [('issue_dismissal_ids', '=', [])]}">
+                            <field name="issue_dismissal_ids">
+                                <tree create="0" edit="0" delete="0">
+                                    <field name="name"/>
+                                    <field name="key" groups="base.group_no_one"/>
+                                    <field name="user_id"/>
+                                    <field name="dismissed_at"/>
+                                </tree>
+                            </field>
+                            <p class="text-muted">
+                                Para restaurar una incidencia use Resumen mensual &gt; Incidencias.
+                            </p>
+                        </page>
                         <page string="Historial">
                             <field name="snapshot_ids" readonly="1">
                                 <tree>

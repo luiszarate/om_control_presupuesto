@@ -295,12 +295,25 @@ def build_budget_xlsx(env, budget, report, include_subcategories=True):
     parameter_row += 1
     parameters.write_string(parameter_row, 0, "Incidencias", header)
     parameter_row += 1
-    for issue in report["issues"]:
-        parameters.merge_range(parameter_row, 0, parameter_row, 1, _safe_text(issue), error_format)
+    for issue in report["issue_items"]:
+        parameters.merge_range(parameter_row, 0, parameter_row, 1, _safe_text(issue["title"]), error_format)
         parameter_row += 1
-    if not report["issues"]:
+        for detail in [issue["hint"]] + issue["details"]:
+            write_text(parameters, parameter_row, 1, detail)
+            parameter_row += 1
+    if not report["issue_items"]:
         parameters.merge_range(parameter_row, 0, parameter_row, 1, "Sin incidencias", text_format)
         parameter_row += 1
+    if report["dismissed_issue_items"]:
+        parameter_row += 1
+        parameters.write_string(parameter_row, 0, "Incidencias descartadas", header)
+        parameter_row += 1
+        for issue in report["dismissed_issue_items"]:
+            parameters.merge_range(parameter_row, 0, parameter_row, 1, _safe_text(issue["title"]), warning)
+            parameter_row += 1
+            for detail in issue["details"]:
+                write_text(parameters, parameter_row, 1, detail)
+                parameter_row += 1
     parameter_row += 1
     parameters.write_string(parameter_row, 0, "Avisos", header)
     parameter_row += 1

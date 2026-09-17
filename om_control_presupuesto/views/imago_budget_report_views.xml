@@ -4,25 +4,29 @@
         <field name="name">imago.budget.report.wizard.form</field>
         <field name="model">imago.budget.report.wizard</field>
         <field name="arch" type="xml">
-            <form string="Resumen mensual">
+            <form string="Resumen mensual" create="0" delete="0" duplicate="0">
                 <header>
-                    <button name="action_calculate" type="object" string="Actualizar" class="oe_highlight"/>
-                    <button name="action_view_purchase_lines" type="object" string="Detalle de compras"
-                            attrs="{'invisible': [('calculated_at', '=', False)]}"/>
+                    <button name="action_calculate" type="object" string="Actualizar" class="oe_highlight"
+                            help="Vuelve a leer las ordenes de compra con los filtros actuales."/>
+                    <button name="action_view_purchase_lines" type="object" string="Detalle de compras"/>
+                    <button name="action_view_issues" type="object" string="Incidencias"
+                            attrs="{'invisible': [('active_issue_count', '=', 0), ('dismissed_issue_count', '=', 0)]}"/>
                     <button name="action_export_xlsx" type="object" string="Exportar Excel" class="btn-secondary"/>
                 </header>
                 <sheet>
                     <group>
                         <group>
-                            <field name="budget_id" options="{'no_create': True}"/>
+                            <field name="budget_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                             <field name="cutoff_month"/>
-                            <field name="category_id" options="{'no_create': True}"/>
+                            <field name="category_id" options="{'no_create': True, 'no_open': True}"
+                                   placeholder="Todas"/>
                             <field name="include_subcategories"/>
                         </group>
-                        <group attrs="{'invisible': [('calculated_at', '=', False)]}">
+                        <group>
                             <field name="calculated_at"/>
                             <field name="complete"/>
+                            <field name="active_issue_count" invisible="1"/>
                             <field name="has_total_budget" invisible="1"/>
                             <field name="has_total_projection" invisible="1"/>
                             <field name="currency_id" invisible="1"/>
@@ -33,26 +37,35 @@
                         <field name="warning_text" nolabel="1"/>
                     </div>
                     <div class="alert alert-danger" role="alert"
-                         attrs="{'invisible': [('issue_text', '=', False)]}">
-                        <strong>Reporte incompleto</strong>
+                         attrs="{'invisible': [('active_issue_count', '=', 0)]}">
+                        <strong>Reporte incompleto.</strong>
+                        Restante y proyeccion quedan pendientes hasta resolver o descartar estas incidencias:
                         <field name="issue_text" nolabel="1"/>
+                        <button name="action_view_issues" type="object" class="btn-link p-0"
+                                icon="fa-list" string="Ver detalle y descartar"/>
                     </div>
-                    <group string="Totales" attrs="{'invisible': [('calculated_at', '=', False)]}" col="6">
+                    <div class="alert alert-info" role="status"
+                         attrs="{'invisible': ['|', ('active_issue_count', '!=', 0), ('dismissed_issue_count', '=', 0)]}">
+                        <field name="dismissed_issue_count" nolabel="1" class="oe_inline"/> incidencia(s) descartada(s) no bloquean el reporte.
+                        <button name="action_view_issues" type="object" class="btn-link p-0"
+                                string="Revisar"/>
+                    </div>
+                    <group string="Totales" col="6">
                         <field name="authorized_amount"/>
                         <field name="spent_amount"/>
                         <field name="available_amount" attrs="{'invisible': [('complete', '=', False)]}"/>
                         <field name="remaining_pct" widget="percentage"
-                               attrs="{'invisible': ['|', ('complete', '=', False), ('has_total_budget', '=', False)]}"/>
+                               attrs="{'invisible': [('has_total_budget', '=', False)]}"/>
                         <field name="projection_amount"
-                               attrs="{'invisible': ['|', ('complete', '=', False), ('has_total_projection', '=', False)]}"/>
+                               attrs="{'invisible': [('has_total_projection', '=', False)]}"/>
                         <field name="projection_pct" widget="percentage"
-                               attrs="{'invisible': ['|', '|', ('complete', '=', False), ('has_total_projection', '=', False), ('has_total_budget', '=', False)]}"/>
+                               attrs="{'invisible': ['|', ('has_total_projection', '=', False), ('has_total_budget', '=', False)]}"/>
                     </group>
+                    <field name="issue_line_ids" invisible="1"/>
                     <field name="purchase_line_ids" invisible="1"/>
-                    <field name="detail_line_ids" invisible="1"/>
                     <field name="export_file" filename="export_filename" invisible="1"/>
                     <field name="export_filename" invisible="1"/>
-                    <field name="line_ids" nolabel="1" attrs="{'invisible': [('calculated_at', '=', False)]}">
+                    <field name="line_ids" nolabel="1">
                         <tree create="0" delete="0"
                               decoration-danger="status == 'over'"
                               decoration-warning="status in ('risk', 'unbudgeted', 'incomplete')"
@@ -63,7 +76,7 @@
                             <field name="available_amount" sum="Total"
                                    attrs="{'invisible': [('complete', '=', False)]}"/>
                             <field name="remaining_pct" widget="percentage"
-                                   attrs="{'invisible': ['|', ('complete', '=', False), ('has_budget', '=', False)]}"/>
+                                   attrs="{'invisible': [('has_budget', '=', False)]}"/>
                             <field name="projection_amount" sum="Total"
                                    attrs="{'invisible': [('has_projection', '=', False)]}"/>
                             <field name="projection_pct" widget="percentage"
@@ -89,6 +102,62 @@
                     </field>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <record id="view_imago_budget_report_issue_tree" model="ir.ui.view">
+        <field name="name">imago.budget.report.issue.tree</field>
+        <field name="model">imago.budget.report.issue</field>
+        <field name="arch" type="xml">
+            <tree create="0" edit="0" delete="0" decoration-muted="dismissed">
+                <field name="issue_type"/>
+                <field name="name"/>
+                <field name="hint"/>
+                <field name="dismissed"/>
+                <button name="action_dismiss" type="object" string="Descartar" icon="fa-eye-slash"
+                        groups="om_control_presupuesto.group_imago_budget_manager"
+                        attrs="{'invisible': [('dismissed', '=', True)]}"
+                        confirm="La incidencia dejara de marcar el reporte como incompleto. Continuar?"/>
+                <button name="action_restore" type="object" string="Restaurar" icon="fa-undo"
+                        groups="om_control_presupuesto.group_imago_budget_manager"
+                        attrs="{'invisible': [('dismissed', '=', False)]}"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_imago_budget_report_issue_form" model="ir.ui.view">
+        <field name="name">imago.budget.report.issue.form</field>
+        <field name="model">imago.budget.report.issue</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0" delete="0">
+                <sheet>
+                    <h2><field name="name"/></h2>
+                    <group>
+                        <field name="issue_type"/>
+                        <field name="budget_id"/>
+                        <field name="dismissed"/>
+                        <field name="hint"/>
+                    </group>
+                    <label for="details"/>
+                    <field name="details" nolabel="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_imago_budget_report_issue_search" model="ir.ui.view">
+        <field name="name">imago.budget.report.issue.search</field>
+        <field name="model">imago.budget.report.issue</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="details"/>
+                <filter name="active" string="Pendientes" domain="[('dismissed', '=', False)]"/>
+                <filter name="dismissed" string="Descartadas" domain="[('dismissed', '=', True)]"/>
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_by_type" string="Tipo" context="{'group_by': 'issue_type'}"/>
+                </group>
+            </search>
         </field>
     </record>
 
@@ -186,10 +255,10 @@
         </field>
     </record>
 
-    <record id="action_imago_budget_report" model="ir.actions.act_window">
+    <record id="action_imago_budget_report_summary" model="ir.actions.server">
         <field name="name">Resumen mensual</field>
-        <field name="res_model">imago.budget.report.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">current</field>
+        <field name="model_id" ref="model_imago_budget_report_wizard"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_summary()</field>
     </record>
 </odoo>

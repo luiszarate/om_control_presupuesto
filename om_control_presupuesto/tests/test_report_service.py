@@ -10,6 +10,9 @@ class TestImagoBudgetReportService(SavepointCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
+        cls.env.user.write(
+            {"groups_id": [(4, cls.env.ref("om_control_presupuesto.group_imago_budget_manager").id)]}
+        )
         cls.reporting_currency = cls.env.ref("base.MXN")
         cls.reporting_currency.active = True
         cls.foreign_currency = cls.env["res.currency"].search(
@@ -110,6 +113,45 @@ class TestImagoBudgetReportService(SavepointCase):
         self.assertIsNone(report["totals"]["projection"])
         self.assertEqual(report["details"][0]["status"], "missing_rate")
 
+    def test_missing_rate_issue_has_details_and_can_be_dismissed(self):
+        order = self._create_order(self.foreign_currency, 1000.0, self.project)
+        service = self.env["imago.budget.report.service"]
+
+        report = service.get_report(self.budget, 2)
+        issue = report["issue_items"][0]
+        self.assertEqual(issue["type"], "missing_rate")
+        self.assertIn(self.foreign_currency.name, issue["title"])
+        self.assertIn("Febrero", issue["title"])
+        self.assertTrue(any(order.name in detail for detail in issue["details"]))
+
+        service.dismiss_issue(self.budget.id, issue["item_keys"], issue["title"])
+        report = service.get_report(self.budget, 2)
+        self.assertTrue(report["complete"])
+        self.assertFalse(report["issue_items"])
+        self.assertEqual(len(report["dismissed_issue_items"]), 1)
+        self.assertIsNotNone(report["totals"]["projection"])
+
+        service.restore_issue(self.budget.id, issue["item_keys"])
+        report = service.get_report(self.budget, 2)
+        self.assertFalse(report["complete"])
+
+    def test_summary_is_reused_and_percentages_are_ratios(self):
+        self._create_order(self.reporting_currency, 20000.0, self.project)
+        wizard_model = self.env["imago.budget.report.wizard"]
+
+        first = wizard_model._get_user_summary({"budget_id": self.budget.id, "cutoff_month": 2})
+        second = wizard_model._get_user_summary()
+
+        self.assertEqual(first, second)
+        self.assertEqual(second.cutoff_month, "2")
+        # 100,000 autorizado, 20,000 gastado a febrero: 80% restante, proyeccion 120,000 = 120%.
+        self.assertAlmostEqual(second.remaining_pct, 0.80, places=4)
+        self.assertAlmostEqual(second.projection_amount, 120000.0, places=2)
+        self.assertAlmostEqual(second.projection_pct, 1.20, places=4)
+
+        second.write({"cutoff_month": "4"})
+        self.assertAlmostEqual(second.projection_amount, 60000.0, places=2)
+
     def test_draft_and_cancelled_orders_are_excluded(self):
         self._create_order(self.reporting_currency, 100.0, self.project, state="draft")
         self._create_order(self.reporting_currency, 200.0, self.project, state="cancel")
@@ -145,11 +187,10 @@ class TestImagoBudgetReportService(SavepointCase):
 
     def test_xlsx_export_contains_required_sheets(self):
         self._create_order(self.reporting_currency, 100.0, self.project)
-        wizard = self.env["imago.budget.report.wizard"].create(
-            {"budget_id": self.budget.id, "cutoff_month": "2"}
+        action = self.env["imago.budget.report.wizard"].action_export_summary(
+            {"budget_id": self.budget.id, "cutoff_month": 2}
         )
-
-        action = wizard.action_export_xlsx()
+        wizard = self.env["imago.budget.report.wizard"]._get_user_summary()
 
         self.assertEqual(action["type"], "ir.actions.act_url")
         content = base64.b64decode(wizard.export_file)

@@ -185,6 +185,14 @@
     .o_imago_line_observed { stroke: #2f75b5; }
     .o_imago_line_projected { stroke: #ed7d31; stroke-dasharray: 8 5; }
 
+    .o_imago_issues p { margin: 4px 0 8px; }
+    .o_imago_issue { padding: 8px 0; border-top: 1px solid rgba(0, 0, 0, 0.08); }
+    .o_imago_issue_head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .o_imago_issue_hint { display: block; opacity: 0.8; }
+    .o_imago_issue details { margin-top: 4px; }
+    .o_imago_issue summary { cursor: pointer; }
+    .o_imago_issue ul { max-height: 220px; overflow-y: auto; margin: 4px 0 0; padding-left: 18px; font-size: 12px; }
+
     .o_imago_attention { margin-top: 16px; }
     .o_imago_attention_item { justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #edf0f3; }
     .status-over { color: #a61b1b; }

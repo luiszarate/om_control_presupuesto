@@ -12,8 +12,13 @@ Primera base funcional del control anual definido en `ESPECIFICACION_INICIAL.md`
 - Motor unico por linea de OC: estados `purchase` y `done`, `price_total`, fecha de
   recepcion (`date_planned`) y proyecto de cabecera aportado por `abs_project_po`.
 - Deteccion opcional de `secihti_budget` y exclusion por `sec_project_id`.
-- Resumen mensual nativo con diagnosticos de lineas sin tipo de cambio y compras
-  sin clasificar.
+- Resumen mensual nativo y persistente por usuario: el menu abre siempre el mismo
+  resumen, recalculado con la ultima seleccion; cambiar presupuesto, mes de corte o
+  categoria lo actualiza sin crear registros nuevos.
+- Proyeccion lineal al cierre: gasto de enero al mes de corte / meses transcurridos x 12.
+- Incidencias detalladas (OC sin fecha de recepcion, lineas sin tipo de cambio,
+  integracion) que el responsable de presupuesto puede descartar o restaurar; las
+  descartadas dejan de marcar el reporte como incompleto y quedan auditadas.
 - Dashboard Odoo 14 con filtros, tarjetas, comparativo por categoria y evolucion
   acumulada observada / referencia / proyectada.
 - Exportacion XLSX privada con resumen, matriz mensual, compras, tipos usados y

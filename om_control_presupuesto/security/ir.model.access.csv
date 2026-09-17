@@ -20,3 +20,6 @@ access_imago_budget_snapshot_purchase_line_manager,imago.budget.snapshot.purchas
 access_imago_budget_report_wizard,imago.budget.report.wizard,model_imago_budget_report_wizard,group_imago_budget_user,1,1,1,1
 access_imago_budget_report_line,imago.budget.report.line,model_imago_budget_report_line,group_imago_budget_user,1,1,1,1
 access_imago_budget_report_purchase_line,imago.budget.report.purchase.line,model_imago_budget_report_purchase_line,group_imago_budget_user,1,1,1,1
+access_imago_budget_issue_dismissal_user,imago.budget.issue.dismissal user,model_imago_budget_issue_dismissal,group_imago_budget_user,1,0,0,0
+access_imago_budget_issue_dismissal_manager,imago.budget.issue.dismissal manager,model_imago_budget_issue_dismissal,group_imago_budget_manager,1,1,1,1
+access_imago_budget_report_issue,imago.budget.report.issue,model_imago_budget_report_issue,group_imago_budget_user,1,1,1,1

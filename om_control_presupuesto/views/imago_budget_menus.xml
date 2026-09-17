@@ -6,7 +6,7 @@
     <menuitem id="menu_imago_budget_dashboard" name="Dashboard"
               parent="menu_imago_budget_root" action="action_imago_budget_dashboard" sequence="5"/>
     <menuitem id="menu_imago_budget_report" name="Resumen mensual"
-              parent="menu_imago_budget_root" action="action_imago_budget_report" sequence="10"/>
+              parent="menu_imago_budget_root" action="action_imago_budget_report_summary" sequence="10"/>
     <menuitem id="menu_imago_budget_annual" name="Presupuestos anuales"
               parent="menu_imago_budget_root" action="action_imago_budget" sequence="20"/>
     <menuitem id="menu_imago_budget_configuration" name="Configuracion"

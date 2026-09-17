@@ -53,6 +53,9 @@ class ImagoBudgetSnapshot(models.Model):
                         "integration": report["integration"],
                         "warnings": report["warnings"],
                         "issues": report["issues"],
+                        "dismissed_issues": [
+                            issue["title"] for issue in report["dismissed_issue_items"]
+                        ],
                         "policies": {
                             "timezone": budget.timezone,
                             "amount": budget.amount_policy,

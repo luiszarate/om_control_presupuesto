@@ -5,6 +5,15 @@ import pytz
 
 from odoo import _, fields, models
 
+from .budget import MONTH_SELECTION
+
+MONTH_NAMES = dict((int(number), name) for number, name in MONTH_SELECTION)
+MAX_ISSUE_DETAILS = 200
+
+
+def _money(value):
+    return "{:,.2f}".format(value or 0.0)
+
 
 class ImagoBudgetReportService(models.AbstractModel):
     _name = "imago.budget.report.service"
@@ -97,6 +106,119 @@ class ImagoBudgetReportService(models.AbstractModel):
             "status": status,
         }
 
+    @staticmethod
+    def _collect_issues(candidates, dismissed_keys):
+        """Split issue candidates into active and dismissed payloads.
+
+        Each candidate is ``{"key", "type", "title": callable(items), "hint", "items"}``
+        and each item is ``{"key", "details": [str]}``. Dismissals are stored per item
+        key, so a new order or month with the same problem appears as a new issue.
+        """
+        active = []
+        dismissed = []
+        for candidate in candidates:
+            for target, is_dismissed in ((active, False), (dismissed, True)):
+                items = [
+                    item for item in candidate["items"]
+                    if (item["key"] in dismissed_keys) == is_dismissed
+                ]
+                if not items:
+                    continue
+                details = [detail for item in items for detail in item["details"]]
+                hidden = max(len(details) - MAX_ISSUE_DETAILS, 0)
+                details = details[:MAX_ISSUE_DETAILS]
+                if hidden:
+                    details.append(_("... y %s mas.") % hidden)
+                target.append(
+                    {
+                        "key": candidate["key"],
+                        "type": candidate["type"],
+                        "title": candidate["title"](items),
+                        "hint": candidate["hint"],
+                        "details": details,
+                        "item_keys": [item["key"] for item in items],
+                        "dismissed": is_dismissed,
+                    }
+                )
+        return active, dismissed
+
+    def _integration_issue(self, integration):
+        area = "project" if integration["project"] == "error" else "secihti"
+        message = integration["error"]
+        return {
+            "key": "integration:%s" % area,
+            "type": "integration",
+            "title": lambda items: _("Integracion: %s") % message,
+            "hint": _(
+                "Revise que los modulos de proyecto/SECIHTI esten instalados y actualizados. "
+                "Mientras tanto no se puede distinguir que compras excluir."
+            ),
+            "items": [{"key": "integration:%s" % area, "details": [message]}],
+        }
+
+    def _missing_date_issue(self, orders, timezone):
+        def title(items):
+            return _(
+                "%s ordenes confirmadas sin fecha de recepcion; no se incluyen en el gasto."
+            ) % len(items)
+
+        zone = pytz.timezone(timezone)
+        items = []
+        for order in orders.sorted(key=lambda item: (item.date_order, item.id)):
+            order_date = pytz.UTC.localize(
+                fields.Datetime.to_datetime(order.date_order)
+            ).astimezone(zone)
+            items.append(
+                {
+                    "key": "missing_date:%s" % order.id,
+                    "details": [
+                        _("%s | %s | fecha de orden %s | %s %s")
+                        % (
+                            order.name,
+                            order.partner_id.display_name or "",
+                            order_date.strftime("%d/%m/%Y"),
+                            _money(order.amount_total),
+                            order.currency_id.name,
+                        )
+                    ],
+                }
+            )
+        return {
+            "key": "missing_date",
+            "type": "missing_date",
+            "title": title,
+            "hint": _("Capture la fecha de recepcion en la orden de compra o descarte la incidencia."),
+            "items": items,
+        }
+
+    def _missing_rate_issues(self, pending):
+        candidates = []
+        for (currency_name, month), values in sorted(pending.items()):
+            key = "missing_rate:%s:%s" % (currency_name, month)
+
+            def title(items, currency_name=currency_name, month=month, values=values):
+                return _("Sin tipo de cambio %s para %s: %s lineas (%s %s) sin convertir.") % (
+                    currency_name,
+                    MONTH_NAMES.get(month, month),
+                    values["count"],
+                    _money(values["amount"]),
+                    currency_name,
+                )
+
+            candidates.append(
+                {
+                    "key": key,
+                    "type": "missing_rate",
+                    "title": title,
+                    "hint": _(
+                        "Capture el tipo de cambio de %s en Presupuesto > Tipos de cambio. "
+                        "Si la descarta, esas lineas quedan fuera del gasto."
+                    ) % MONTH_NAMES.get(month, month),
+                    "items": [{"key": key, "details": values["details"]}],
+                }
+            )
+        return candidates
+
     def get_report(self, budget, cutoff_month, category=None):
         budget.ensure_one()
         cutoff_month = int(cutoff_month)
@@ -104,24 +226,25 @@ class ImagoBudgetReportService(models.AbstractModel):
             raise ValueError("cutoff_month must be between 1 and 12")
 
         integration = self._integration_status()
-        issues = []
+        issue_candidates = []
         if integration["error"]:
-            issues.append(integration["error"])
+            issue_candidates.append(self._integration_issue(integration))
 
         start_utc, end_utc = self._period_utc(budget.year, cutoff_month, budget.timezone)
-        order_domain = [
+        # Sin fecha de recepcion no se puede imputar un mes; se acotan por fecha de orden
+        # al periodo del reporte para no arrastrar ordenes de otros ejercicios.
+        missing_date_domain = [
             ("company_id", "=", budget.company_id.id),
             ("state", "in", ("purchase", "done")),
+            ("date_planned", "=", False),
+            ("date_order", ">=", fields.Datetime.to_string(start_utc)),
+            ("date_order", "<", fields.Datetime.to_string(end_utc)),
         ]
-        missing_date_domain = order_domain + [("date_planned", "=", False)]
         if integration["secihti"] == "ready":
             missing_date_domain.append(("sec_project_id", "=", False))
         missing_date_orders = self.env["purchase.order"].search(missing_date_domain)
         if missing_date_orders:
-            issues.append(
-                _("%s ordenes confirmadas no tienen fecha de recepcion.")
-                % len(missing_date_orders)
-            )
+            issue_candidates.append(self._missing_date_issue(missing_date_orders, budget.timezone))
 
         line_domain = [
             ("order_id.company_id", "=", budget.company_id.id),
@@ -168,7 +291,7 @@ class ImagoBudgetReportService(models.AbstractModel):
         monthly_by_top = defaultdict(lambda: [0.0] * 12)
         monthly_by_subcategory = defaultdict(lambda: [0.0] * 12)
         details = []
-        pending = defaultdict(lambda: {"count": 0, "amount": 0.0})
+        pending = defaultdict(lambda: {"count": 0, "amount": 0.0, "details": []})
         unclassified = 0.0
         unclassified_monthly = [0.0] * 12
 
@@ -227,6 +350,16 @@ class ImagoBudgetReportService(models.AbstractModel):
                 key = (currency.name, month)
                 pending[key]["count"] += 1
                 pending[key]["amount"] += original_amount
+                pending[key]["details"].append(
+                    "%s | %s | %s | %s %s"
+                    % (
+                        order.name,
+                        order.partner_id.display_name or "",
+                        ((line.name or "").splitlines() or [""])[0][:80],
+                        _money(original_amount),
+                        currency.name,
+                    )
+                )
                 detail["status"] = "missing_rate"
                 details.append(detail)
                 continue
@@ -246,17 +379,10 @@ class ImagoBudgetReportService(models.AbstractModel):
                 unclassified += converted
                 unclassified_monthly[month - 1] += converted
 
-        for (currency_name, month), values in sorted(pending.items()):
-            issues.append(
-                _("%s lineas %s del mes %s sin convertir (%s %s).")
-                % (
-                    values["count"],
-                    currency_name,
-                    month,
-                    currency_name,
-                    values["amount"],
-                )
-            )
+        issue_candidates.extend(self._missing_rate_issues(pending))
+        dismissed_keys = set(budget.issue_dismissal_ids.mapped("key"))
+        issue_items, dismissed_issue_items = self._collect_issues(issue_candidates, dismissed_keys)
+        issues = [issue["title"] for issue in issue_items]
 
         today = fields.Date.context_today(self)
         future = budget.year > today.year
@@ -364,6 +490,8 @@ class ImagoBudgetReportService(models.AbstractModel):
             "currency_name": budget.currency_id.name,
             "complete": complete,
             "issues": issues,
+            "issue_items": issue_items,
+            "dismissed_issue_items": dismissed_issue_items,
             "warnings": warnings,
             "integration": integration,
             "rows": rows,
@@ -373,6 +501,35 @@ class ImagoBudgetReportService(models.AbstractModel):
             "missing_date_order_ids": missing_date_orders.ids,
         }
 
+    def _default_budget(self):
+        budgets = self.env["imago.budget"].search([], order="year desc, company_id, id desc")
+        today = fields.Date.context_today(self)
+        current = budgets.filtered(
+            lambda item: item.year == today.year and item.company_id == self.env.company
+        )
+        return current[:1] or budgets[:1]
+
+    def _default_cutoff_month(self, budget):
+        """Ultimo mes completo del ejercicio en curso; diciembre en otros ejercicios."""
+        today = fields.Date.context_today(self)
+        if budget.year != today.year:
+            return 12
+        return max(today.month - 1, 1)
+
+    def _get_budget(self, budget_id):
+        budget = self.env["imago.budget"].browse(int(budget_id)).exists()
+        budget.check_access_rights("read")
+        budget.check_access_rule("read")
+        return budget
+
+    def dismiss_issue(self, budget_id, item_keys, name=False):
+        budget = self._get_budget(budget_id)
+        return self.env["imago.budget.issue.dismissal"].dismiss_keys(budget, item_keys, name)
+
+    def restore_issue(self, budget_id, item_keys):
+        budget = self._get_budget(budget_id)
+        return self.env["imago.budget.issue.dismissal"].restore_keys(budget, item_keys)
+
     def get_dashboard_data(self, budget_id=False, cutoff_month=False, category_id=False):
         """RPC entrypoint. It deliberately uses the caller's purchase access rules."""
         budgets = self.env["imago.budget"].search([], order="year desc, company_id, id desc")
@@ -380,7 +537,7 @@ class ImagoBudgetReportService(models.AbstractModel):
         if budget_id:
             budget = budgets.filtered(lambda item: item.id == int(budget_id))[:1]
         if not budget:
-            budget = budgets[:1]
+            budget = self._default_budget()
         budget_options = [
             {
                 "id": item.id,
@@ -401,14 +558,7 @@ class ImagoBudgetReportService(models.AbstractModel):
             }
 
         today = fields.Date.context_today(self)
-        if cutoff_month:
-            selected_month = int(cutoff_month)
-        elif budget.year < today.year:
-            selected_month = 12
-        elif budget.year > today.year:
-            selected_month = 12
-        else:
-            selected_month = max(today.month - 1, 1)
+        selected_month = int(cutoff_month) if cutoff_month else self._default_cutoff_month(budget)
 
         categories = self.env["imago.budget.category"].with_context(active_test=False).search(
             [("company_id", "=", budget.company_id.id)], order="parent_path, sequence, name"
@@ -451,5 +601,8 @@ class ImagoBudgetReportService(models.AbstractModel):
             "selected_category_id": category.id if category else False,
             "selected_cutoff_month": selected_month,
             "report": report,
+            "can_dismiss": self.env.user.has_group(
+                "om_control_presupuesto.group_imago_budget_manager"
+            ) and budget.state != "closed",
             "message": False,
         }

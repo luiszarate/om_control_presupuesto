@@ -72,4 +72,10 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
     </record>
+    <record id="rule_imago_budget_issue_dismissal_company" model="ir.rule">
+        <field name="name">Incidencias descartadas de companias autorizadas</field>
+        <field name="model_id" ref="model_imago_budget_issue_dismissal"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_imago_budget_user'))]"/>
+    </record>
 </odoo>

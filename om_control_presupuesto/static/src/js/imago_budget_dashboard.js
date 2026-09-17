@@ -18,6 +18,8 @@ odoo.define("om_control_presupuesto.dashboard", function (require) {
             "click .o_imago_open_detail": "_onOpenDetail",
             "click .o_imago_open_summary": "_onOpenSummary",
             "click .o_imago_export": "_onExport",
+            "click .o_imago_dismiss_issue": "_onDismissIssue",
+            "click .o_imago_restore_issue": "_onRestoreIssue",
         },
 
         init: function (parent, action) {
@@ -83,81 +85,80 @@ odoo.define("om_control_presupuesto.dashboard", function (require) {
             return this._reload();
         },
 
-        _reportContext: function (categoryId) {
+        _filters: function (categoryId) {
             return {
-                default_budget_id: this.budgetId,
-                default_cutoff_month: String(this.cutoffMonth),
-                default_category_id: categoryId === undefined ? this.categoryId : categoryId,
+                budget_id: this.budgetId,
+                cutoff_month: this.cutoffMonth,
+                category_id: categoryId === undefined ? this.categoryId : categoryId,
             };
+        },
+
+        _runSummaryAction: function (method, categoryId) {
+            var self = this;
+            return this._rpc({
+                model: "imago.budget.report.wizard",
+                method: method,
+                args: [this._filters(categoryId)],
+            }).then(function (action) {
+                return self.do_action(action);
+            });
         },
 
         _onOpenCategory: function (event) {
             var categoryId = parseInt(event.currentTarget.dataset.categoryId, 10) || false;
-            return this._openSummary(categoryId);
+            return this._runSummaryAction("action_open_summary", categoryId);
         },
 
         _onOpenSummary: function () {
-            return this._openSummary(this.categoryId);
-        },
-
-        _openSummary: function (categoryId) {
-            return this.do_action({
-                type: "ir.actions.act_window",
-                name: "Resumen mensual",
-                res_model: "imago.budget.report.wizard",
-                views: [[false, "form"]],
-                view_mode: "form",
-                target: "current",
-                context: this._reportContext(categoryId),
-            });
+            return this._runSummaryAction("action_open_summary");
         },
 
         _onOpenDetail: function () {
-            var self = this;
-            return this._rpc({
-                model: "imago.budget.report.wizard",
-                method: "create",
-                args: [{
-                    budget_id: this.budgetId,
-                    cutoff_month: String(this.cutoffMonth),
-                    category_id: this.categoryId || false,
-                }],
-            }).then(function (wizardId) {
-                return self._rpc({
-                    model: "imago.budget.report.wizard",
-                    method: "action_calculate",
-                    args: [[wizardId]],
-                }).then(function () { return wizardId; });
-            }).then(function (wizardId) {
-                return self._rpc({
-                    model: "imago.budget.report.wizard",
-                    method: "action_view_purchase_lines",
-                    args: [[wizardId]],
-                });
-            }).then(function (action) {
-                return self.do_action(action);
-            });
+            return this._runSummaryAction("action_open_purchase_detail");
         },
 
         _onExport: function () {
+            return this._runSummaryAction("action_export_summary");
+        },
+
+        _issueFromEvent: function (event, listName) {
+            var index = parseInt(event.currentTarget.dataset.issueIndex, 10);
+            var report = this.data.report || {};
+            return (report[listName] || [])[index];
+        },
+
+        _onDismissIssue: function (event) {
             var self = this;
+            var issue = this._issueFromEvent(event, "issue_items");
+            if (!issue) {
+                return;
+            }
+            var message = "Descartar la incidencia?\n\n" + issue.title +
+                "\n\nDejara de marcar el reporte como incompleto.";
+            if (!window.confirm(message)) {
+                return;
+            }
             return this._rpc({
                 model: "imago.budget.report.wizard",
-                method: "create",
-                args: [{
-                    budget_id: this.budgetId,
-                    cutoff_month: String(this.cutoffMonth),
-                    category_id: this.categoryId || false,
-                    include_subcategories: true,
-                }],
-            }).then(function (wizardId) {
-                return self._rpc({
-                    model: "imago.budget.report.wizard",
-                    method: "action_export_xlsx",
-                    args: [[wizardId]],
-                });
-            }).then(function (action) {
-                return self.do_action(action);
+                method: "dismiss_report_issue",
+                args: [this.budgetId, issue.item_keys, issue.title],
+            }).then(function () {
+                return self._reload();
+            });
+        },
+
+        _onRestoreIssue: function (event) {
+            var self = this;
+            var issue = this._issueFromEvent(event, "dismissed_issue_items");
+            if (!issue) {
+                return;
+            }
+            return this._rpc({
+                model: "imago.budget.report.wizard",
+                method: "restore_report_issue",
+                args: [this.budgetId, issue.item_keys],
+            }).then(function () {
+                return self._reload();
             });
         },
 

@@ -94,6 +94,9 @@ class ImagoBudget(models.Model):
     snapshot_ids = fields.One2many(
         "imago.budget.snapshot", "budget_id", string="Historial", readonly=True
     )
+    issue_dismissal_ids = fields.One2many(
+        "imago.budget.issue.dismissal", "budget_id", string="Incidencias descartadas", readonly=True
+    )
     authorized_amount = fields.Monetary(
         compute="_compute_authorized_amount", store=True, currency_field="currency_id"
     )
@@ -183,12 +186,9 @@ class ImagoBudget(models.Model):
 
     def action_open_report(self):
         self.ensure_one()
-        action = self.env.ref("om_control_presupuesto.action_imago_budget_report").read()[0]
-        action["context"] = {
-            "default_budget_id": self.id,
-            "default_cutoff_month": "12",
-        }
-        return action
+        return self.env["imago.budget.report.wizard"].action_open_summary(
+            {"budget_id": self.id, "category_id": False}
+        )
 
     def action_load_reference_structure(self):
         """Create the editable 2026 reference structure described in the specification."""
