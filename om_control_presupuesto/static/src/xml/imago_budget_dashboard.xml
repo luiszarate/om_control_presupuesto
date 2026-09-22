@@ -24,7 +24,7 @@
                     </select>
                 </label>
                 <label>Mes de corte
-                    <select class="form-control o_imago_month_filter" t-att-disabled="!widget.data.report">
+                    <select class="form-control o_imago_month_filter" t-att-disabled="widget.data.report ? undefined : 'disabled'">
                         <t t-foreach="['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']" t-as="monthName">
                             <option t-att-value="monthName_index + 1"
                                     t-att-selected="monthName_index + 1 === widget.cutoffMonth ? 'selected' : undefined">
@@ -33,8 +33,8 @@
                         </t>
                     </select>
                 </label>
-                <label>Categoria
-                    <select class="form-control o_imago_category_filter" t-att-disabled="!widget.data.report">
+                <label>Categoría
+                    <select class="form-control o_imago_category_filter" t-att-disabled="widget.data.report ? undefined : 'disabled'">
                         <option value="">Todas</option>
                         <t t-foreach="widget.data.category_options || []" t-as="category">
                             <option t-att-value="category.id"
@@ -55,7 +55,7 @@
                 </div>
                 <div class="alert alert-danger o_imago_issues" t-if="report.issue_items.length">
                     <strong>Reporte incompleto</strong>
-                    <p>Restante y proyeccion quedan pendientes hasta resolver o descartar estas incidencias.</p>
+                    <p>Restante y proyección quedan pendientes hasta resolver o descartar estas incidencias.</p>
                     <t t-foreach="report.issue_items" t-as="issue">
                         <div class="o_imago_issue">
                             <div class="o_imago_issue_head">
@@ -106,60 +106,67 @@
                     <div class="o_imago_card">
                         <span>Disponible</span>
                         <strong t-esc="widget.formatMoney(totals.available)"/>
-                        <small t-esc="widget.formatPercent(totals.remaining_pct)"/>
+                        <small><t t-esc="widget.formatPercent(totals.remaining_pct)"/> del autorizado</small>
                     </div>
                     <div class="o_imago_card">
-                        <span>Proyeccion al cierre <t t-esc="report.year"/></span>
+                        <span>Proyección al cierre <t t-esc="report.year"/></span>
                         <strong t-esc="widget.formatMoney(totals.projection)"/>
-                        <small t-esc="widget.formatPercent(totals.projection_pct)"/>
+                        <small t-att-class="totals.projection_pct > 100 ? 'status-risk' : undefined"><t t-esc="widget.formatPercent(totals.projection_pct)"/> del autorizado</small>
                     </div>
                 </div>
 
                 <div class="o_imago_dashboard_grid">
                     <section class="o_imago_panel o_imago_category_chart">
                         <div class="o_imago_panel_title">
-                            <h2>Presupuesto por categoria</h2>
-                            <div class="o_imago_legend"><span class="authorized">Autorizado</span><span class="spent">Gastado</span><span class="projected">Proyeccion</span></div>
+                            <h2>Presupuesto por categoría</h2>
+                            <div class="o_imago_legend"><span class="authorized">Autorizado</span><span class="spent">Gastado</span><span class="projected">Proyección</span></div>
                         </div>
                         <t t-foreach="report.rows" t-as="row">
-                            <div class="o_imago_category_row" t-att-data-category-id="row.category_id || ''">
-                                <div class="o_imago_category_name">
+                            <button type="button" class="o_imago_category_row" t-att-data-category-id="row.category_id || ''" t-att-aria-label="'Ver resumen de ' + row.category_name">
+                                <span class="o_imago_category_name">
                                     <span t-esc="row.category_name"/>
                                     <small t-att-class="'status-' + row.status" t-esc="widget.statusLabel(row.status)"/>
-                                </div>
-                                <div class="o_imago_bars">
-                                    <div class="o_imago_bar authorized" t-att-style="'width:' + widget.barWidth(row.authorized)" t-att-title="widget.formatMoney(row.authorized)"/>
-                                    <div class="o_imago_bar spent" t-att-style="'width:' + widget.barWidth(row.spent)" t-att-title="widget.formatMoney(row.spent)"/>
-                                    <div class="o_imago_bar projected" t-att-style="'width:' + widget.barWidth(row.projection)" t-att-title="widget.formatMoney(row.projection)"/>
-                                </div>
-                            </div>
+                                </span>
+                                <span class="o_imago_bars" aria-hidden="true">
+                                    <span class="o_imago_bar authorized" t-att-style="'width:' + widget.barWidth(row.authorized)" t-att-title="widget.formatMoney(row.authorized)"/>
+                                    <span class="o_imago_bar spent" t-att-style="'width:' + widget.barWidth(row.spent)" t-att-title="widget.formatMoney(row.spent)"/>
+                                    <span class="o_imago_bar projected" t-att-style="'width:' + widget.barWidth(row.projection)" t-att-title="widget.formatMoney(row.projection)"/>
+                                </span>
+                                <span class="o_imago_category_amount"><t t-esc="widget.formatMoney(row.spent)"/><small>Gastado</small></span>
+                            </button>
                         </t>
+                        <p t-if="!report.rows.length" class="o_imago_empty">No hay categorías para esta selección.</p>
                     </section>
 
-                    <section class="o_imago_panel">
-                        <div class="o_imago_panel_title">
-                            <h2>Evolucion acumulada</h2>
-                            <div class="o_imago_legend"><span class="observed">Observado</span><span class="reference">Ritmo presupuesto</span><span class="projection-line">Tramo proyectado</span></div>
-                        </div>
-                        <svg class="o_imago_line_chart" viewBox="0 0 720 240" role="img" aria-label="Evolucion acumulada del presupuesto"/>
-                    </section>
+                    <div class="o_imago_dashboard_side">
+                        <section class="o_imago_panel">
+                            <div class="o_imago_panel_title">
+                                <h2>Evolución acumulada</h2>
+                                <div class="o_imago_legend"><span class="observed">Observado</span><span class="reference">Ritmo presupuesto</span><span class="projection-line">Tramo proyectado</span></div>
+                            </div>
+                            <div class="o_imago_chart_scroll" tabindex="0" role="region" aria-label="Gráfica de evolución acumulada, desplazable horizontalmente">
+                                <svg class="o_imago_line_chart" viewBox="0 0 720 304" role="img" aria-label="Evolución acumulada del presupuesto"/>
+                            </div>
+                        </section>
+
+                        <section class="o_imago_panel o_imago_attention">
+                            <div class="o_imago_panel_title">
+                                <h2>Atención requerida</h2>
+                                <button type="button" class="btn btn-link o_imago_open_detail">Ver <t t-esc="report.purchase_line_ids.length"/> líneas de compra</button>
+                            </div>
+                            <p class="o_imago_empty" t-if="!widget.hasAttentionRows()">Sin categorías que requieran atención en este corte.</p>
+                            <div class="o_imago_attention_list">
+                                <t t-foreach="report.rows" t-as="row">
+                                    <div t-if="row.status !== 'within'" t-att-class="'o_imago_attention_item status-' + row.status">
+                                        <strong t-esc="row.category_name"/>
+                                        <span t-esc="widget.statusLabel(row.status)"/>
+                                        <span t-esc="widget.formatMoney(row.spent)"/>
+                                    </div>
+                                </t>
+                            </div>
+                        </section>
+                    </div>
                 </div>
-
-                <section class="o_imago_panel o_imago_attention">
-                    <div class="o_imago_panel_title">
-                        <h2>Atencion requerida</h2>
-                        <button type="button" class="btn btn-link o_imago_open_detail">Ver <t t-esc="report.purchase_line_ids.length"/> lineas de compra</button>
-                    </div>
-                    <div class="o_imago_attention_list">
-                        <t t-foreach="report.rows" t-as="row">
-                            <div t-if="row.status !== 'within'" t-att-class="'o_imago_attention_item status-' + row.status">
-                                <strong t-esc="row.category_name"/>
-                                <span t-esc="widget.statusLabel(row.status)"/>
-                                <span t-esc="widget.formatMoney(row.spent)"/>
-                            </div>
-                        </t>
-                    </div>
-                </section>
             </t>
     </t>
 </templates>

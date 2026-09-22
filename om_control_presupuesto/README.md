@@ -38,6 +38,19 @@ El modulo requiere `abs_project_po` y espera el campo almacenado
 si esta instalado, el motor valida `purchase.order.sec_project_id` hacia
 `sec.project` antes de considerar completo un reporte.
 
+## Actualizacion del dashboard (14.0.1.1.1)
+
+Corrige la clase CSS del contenedor de la accion y los atributos HTML que
+deshabilitaban los filtros aun cuando habia un reporte. Incluye distribucion
+adaptable, categorias accesibles con teclado, importes visibles y ejes de la
+grafica en MXN. No modifica el motor de calculo ni los permisos.
+
+Para aplicarlo en el servidor, copiar la carpeta `om_control_presupuesto` al
+directorio de addons y actualizar el modulo en la base correspondiente
+(`-u om_control_presupuesto`, usando la configuracion habitual de Odoo).
+Reiniciar los procesos de Odoo y recargar el navegador sin cache para cargar
+los nuevos recursos JS, SCSS y QWeb.
+
 ## Siguiente incremento
 
 La siguiente fase completara el acceso desde cada celda mensual, la matriz de

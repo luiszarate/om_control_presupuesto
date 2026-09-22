@@ -56,14 +56,19 @@ odoo.define("om_control_presupuesto.dashboard", function (require) {
 
         _reload: function () {
             var self = this;
-            this.$el.addClass("o_imago_loading");
+            this.$el.addClass("o_imago_loading").attr("aria-busy", "true");
             return this._loadData().then(function () {
                 self._renderDashboard();
+            }, function (error) {
+                self.$el.removeClass("o_imago_loading").attr("aria-busy", "false");
+                throw error;
             });
         },
 
         _renderDashboard: function () {
-            this.$el.removeClass("o_imago_loading");
+            // AbstractAction can replace className with o_action during init.
+            // Apply the style scope to the actual action root on every render.
+            this.$el.addClass("o_imago_dashboard").removeClass("o_imago_loading").attr("aria-busy", "false");
             this.$el.html(QWeb.render("ImagoBudgetDashboard", {widget: this}));
             this._renderLineChart();
         },
@@ -202,6 +207,12 @@ odoo.define("om_control_presupuesto.dashboard", function (require) {
             }[status] || status;
         },
 
+        hasAttentionRows: function () {
+            return this.data.report.rows.some(function (row) {
+                return row.status !== "within";
+            });
+        },
+
         _renderLineChart: function () {
             var svg = this.el.querySelector(".o_imago_line_chart");
             if (!svg || !this.data.report) {
@@ -218,8 +229,11 @@ odoo.define("om_control_presupuesto.dashboard", function (require) {
                 });
             });
             var maxValue = Math.max.apply(Math, values.concat([1]));
-            var x = function (month) { return 42 + (month - 1) * 59.5; };
-            var y = function (value) { return 205 - (value / maxValue) * 170; };
+            var minValue = Math.min.apply(Math, values.concat([0]));
+            var x = function (month) { return 76 + (month - 1) * 56; };
+            var y = function (value) { return 256 - ((value - minValue) / (maxValue - minValue)) * 216; };
+            var months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+            var self = this;
             var create = function (name, attributes) {
                 var node = document.createElementNS(namespace, name);
                 Object.keys(attributes).forEach(function (key) {
@@ -228,14 +242,21 @@ odoo.define("om_control_presupuesto.dashboard", function (require) {
                 svg.appendChild(node);
                 return node;
             };
-            [0, 0.5, 1].forEach(function (ratio) {
-                create("line", {x1: 42, y1: 205 - ratio * 170, x2: 696, y2: 205 - ratio * 170, class: "o_imago_grid"});
+            var unit = create("text", {x: 76, y: 18, class: "o_imago_axis_unit"});
+            unit.textContent = "MXN";
+            [0, 0.25, 0.5, 0.75, 1].forEach(function (ratio) {
+                var value = minValue + ratio * (maxValue - minValue);
+                create("line", {x1: 76, y1: y(value), x2: 692, y2: y(value), class: "o_imago_grid"});
+                var label = create("text", {x: 64, y: y(value) + 4, class: "o_imago_value_label"});
+                label.textContent = new Intl.NumberFormat("es-MX", {maximumFractionDigits: 1}).format(
+                    Math.abs(value) >= 1000000 ? value / 1000000 : Math.abs(value) >= 1000 ? value / 1000 : value
+                ) + (Math.abs(value) >= 1000000 ? " M" : Math.abs(value) >= 1000 ? " mil" : "");
             });
             points.forEach(function (point) {
-                var label = create("text", {x: x(point.month), y: 226, class: "o_imago_axis_label"});
-                label.textContent = point.month;
+                var label = create("text", {x: x(point.month), y: 282, class: "o_imago_axis_label"});
+                label.textContent = months[point.month - 1];
             });
-            var drawSeries = function (key, className) {
+            var drawSeries = function (key, className, color) {
                 var series = points.filter(function (point) { return point[key] !== null; });
                 if (!series.length) {
                     return;
@@ -243,11 +264,20 @@ odoo.define("om_control_presupuesto.dashboard", function (require) {
                 create("polyline", {
                     points: series.map(function (point) { return x(point.month) + "," + y(point[key]); }).join(" "),
                     class: className,
+                    fill: "none",
+                    stroke: color,
+                    "stroke-width": 3,
+                });
+                series.forEach(function (point) {
+                    var dot = create("circle", {cx: x(point.month), cy: y(point[key]), r: 3, fill: color});
+                    var title = document.createElementNS(namespace, "title");
+                    title.textContent = months[point.month - 1] + ": " + self.formatMoney(point[key]);
+                    dot.appendChild(title);
                 });
             };
-            drawSeries("reference", "o_imago_line_reference");
-            drawSeries("observed", "o_imago_line_observed");
-            drawSeries("projected", "o_imago_line_projected");
+            drawSeries("reference", "o_imago_line_reference", "#8797a8");
+            drawSeries("observed", "o_imago_line_observed", "#2f75b5");
+            drawSeries("projected", "o_imago_line_projected", "#c56920");
         },
     });
 
