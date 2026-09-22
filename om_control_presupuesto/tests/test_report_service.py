@@ -152,6 +152,28 @@ class TestImagoBudgetReportService(SavepointCase):
         second.write({"cutoff_month": "4"})
         self.assertAlmostEqual(second.projection_amount, 60000.0, places=2)
 
+    def test_all_summary_entry_points_share_one_record(self):
+        wizard_model = self.env["imago.budget.report.wizard"]
+        dashboard_action = wizard_model.action_open_summary(
+            {"budget_id": self.budget.id, "cutoff_month": 2, "category_id": self.category.id}
+        )
+        menu_action = wizard_model.action_open_summary()
+        budget_action = self.budget.action_open_report()
+        detail_action = wizard_model.action_open_purchase_detail(
+            {"budget_id": self.budget.id, "cutoff_month": 4}
+        )
+
+        self.assertEqual(dashboard_action["res_id"], menu_action["res_id"])
+        self.assertEqual(menu_action["res_id"], budget_action["res_id"])
+        self.assertEqual(menu_action["target"], "main")
+        self.assertEqual(detail_action["domain"], [("wizard_id", "=", menu_action["res_id"])])
+        summaries = wizard_model.search([("user_id", "=", self.env.uid)])
+        self.assertEqual(len(summaries), 1)
+        self.assertFalse(wizard_model._transient)
+        self.assertEqual(summaries.cutoff_month, "4")
+        self.assertFalse(summaries.category_id)
+        self.assertEqual(summaries.action_calculate()["type"], "ir.actions.act_window_close")
+
     def test_draft_and_cancelled_orders_are_excluded(self):
         self._create_order(self.reporting_currency, 100.0, self.project, state="draft")
         self._create_order(self.reporting_currency, 200.0, self.project, state="cancel")

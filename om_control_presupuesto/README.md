@@ -12,9 +12,10 @@ Primera base funcional del control anual definido en `ESPECIFICACION_INICIAL.md`
 - Motor unico por linea de OC: estados `purchase` y `done`, `price_total`, fecha de
   recepcion (`date_planned`) y proyecto de cabecera aportado por `abs_project_po`.
 - Deteccion opcional de `secihti_budget` y exclusion por `sec_project_id`.
-- Resumen mensual nativo y persistente por usuario: el menu abre siempre el mismo
-  resumen, recalculado con la ultima seleccion; cambiar presupuesto, mes de corte o
-  categoria lo actualiza sin crear registros nuevos.
+- Resumen mensual nativo y persistente, con un registro por usuario. El menu,
+  dashboard y presupuesto anual abren ese mismo registro; cambiar presupuesto,
+  mes de corte o categoria lo recalcula sin crear otro resumen. Al actualizar el
+  modulo se conserva el resumen mas reciente de cada usuario.
 - Proyeccion lineal al cierre: gasto de enero al mes de corte / meses transcurridos x 12.
 - Incidencias detalladas (OC sin fecha de recepcion, lineas sin tipo de cambio,
   integracion) que el responsable de presupuesto puede descartar o restaurar; las

@@ -21,14 +21,20 @@ def _ratio(percent):
     return percent / 100.0 if percent is not None else 0.0
 
 
-class ImagoBudgetReportWizard(models.TransientModel):
-    """Resumen mensual persistente: un registro por usuario que se recalcula al abrirse
-    y al cambiar sus filtros, en lugar de crear una instancia nueva en cada consulta."""
+class ImagoBudgetReportWizard(models.Model):
+    """Resumen mensual unico por usuario, recalculado al abrir o cambiar filtros."""
 
     _name = "imago.budget.report.wizard"
     _description = "Resumen de presupuesto Imago"
-    _transient_max_hours = 24.0
+    _sql_constraints = [
+        (
+            "imago_budget_report_user_unique",
+            "unique(user_id)",
+            "Cada usuario tiene un solo resumen mensual.",
+        ),
+    ]
 
+    user_id = fields.Many2one("res.users", index=True, readonly=True)
     budget_id = fields.Many2one("imago.budget", required=True)
     company_id = fields.Many2one(related="budget_id.company_id", readonly=True)
     currency_id = fields.Many2one(related="budget_id.currency_id", readonly=True)
@@ -72,16 +78,41 @@ class ImagoBudgetReportWizard(models.TransientModel):
     export_file = fields.Binary(readonly=True, attachment=False)
     export_filename = fields.Char(readonly=True)
 
+    def init(self):
+        """Adopt the latest legacy transient summary for each user on upgrade."""
+        self.env.cr.execute("""
+            WITH ranked AS (
+                SELECT id, COALESCE(user_id, create_uid) AS owner_id,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY COALESCE(user_id, create_uid)
+                           ORDER BY write_date DESC NULLS LAST, id DESC
+                       ) AS position
+                  FROM imago_budget_report_wizard
+            )
+            DELETE FROM imago_budget_report_wizard AS summary
+                  USING ranked
+             WHERE summary.id = ranked.id
+               AND (ranked.position > 1 OR ranked.owner_id IS NULL)
+        """)
+        self.env.cr.execute("""
+            UPDATE imago_budget_report_wizard
+               SET user_id = create_uid
+             WHERE user_id IS NULL
+        """)
+
     # ------------------------------------------------------------------
     # Persistencia y recalculo
     # ------------------------------------------------------------------
     @api.model_create_multi
     def create(self, vals_list):
+        vals_list = [dict(values, user_id=self.env.uid) for values in vals_list]
         wizards = super().create(vals_list)
         wizards._refresh()
         return wizards
 
     def write(self, values):
+        if "user_id" in values:
+            raise UserError(_("No se puede cambiar el usuario del resumen mensual."))
         result = super().write(values)
         if not self.env.context.get("imago_skip_refresh") and set(REPORT_FILTER_FIELDS) & set(values):
             self._refresh()
@@ -215,7 +246,9 @@ class ImagoBudgetReportWizard(models.TransientModel):
         """
         filters = dict(filters or {})
         service = self._get_service()
-        wizard = self.search([("create_uid", "=", self.env.uid)], order="write_date desc, id desc", limit=1)
+        # Serializa las primeras aperturas simultaneas del mismo usuario.
+        self.env.cr.execute("SELECT pg_advisory_xact_lock(%s, %s)", (0x494D474F, self.env.uid))
+        wizard = self.search([("user_id", "=", self.env.uid)], limit=1)
         budget_model = self.env["imago.budget"]
 
         budget = budget_model
@@ -256,7 +289,7 @@ class ImagoBudgetReportWizard(models.TransientModel):
             "res_id": self.id,
             "views": [(self.env.ref("om_control_presupuesto.view_imago_budget_report_form").id, "form")],
             "view_mode": "form",
-            "target": "current",
+            "target": "main",
             "context": {"form_view_initial_mode": "edit"},
         }
 
@@ -290,7 +323,7 @@ class ImagoBudgetReportWizard(models.TransientModel):
     def action_calculate(self):
         self.ensure_one()
         self._refresh()
-        return self._summary_action()
+        return {"type": "ir.actions.act_window_close"}
 
     def action_view_issues(self):
         self.ensure_one()
@@ -346,11 +379,10 @@ class ImagoBudgetReportWizard(models.TransientModel):
         }
 
 
-class ImagoBudgetReportLine(models.TransientModel):
+class ImagoBudgetReportLine(models.Model):
     _name = "imago.budget.report.line"
     _description = "Renglon de resumen de presupuesto Imago"
     _order = "id"
-    _transient_max_hours = 24.0
 
     wizard_id = fields.Many2one("imago.budget.report.wizard", required=True, ondelete="cascade")
     currency_id = fields.Many2one(related="wizard_id.currency_id", readonly=True)
@@ -390,11 +422,10 @@ class ImagoBudgetReportLine(models.TransientModel):
     month_12 = fields.Monetary(string="Dic", readonly=True, currency_field="currency_id")
 
 
-class ImagoBudgetReportIssue(models.TransientModel):
+class ImagoBudgetReportIssue(models.Model):
     _name = "imago.budget.report.issue"
     _description = "Incidencia de resumen de presupuesto Imago"
     _order = "dismissed, id"
-    _transient_max_hours = 24.0
 
     wizard_id = fields.Many2one(
         "imago.budget.report.wizard", required=True, index=True, ondelete="cascade"
@@ -436,11 +467,10 @@ class ImagoBudgetReportIssue(models.TransientModel):
         return self._after_change()
 
 
-class ImagoBudgetReportPurchaseLine(models.TransientModel):
+class ImagoBudgetReportPurchaseLine(models.Model):
     _name = "imago.budget.report.purchase.line"
     _description = "Detalle de compra para presupuesto Imago"
     _order = "confirmation_date, order_id, purchase_line_id"
-    _transient_max_hours = 24.0
 
     wizard_id = fields.Many2one(
         "imago.budget.report.wizard", required=True, index=True, ondelete="cascade"
